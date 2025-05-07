@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+html {
+  @apply h-full;
+}
+
+body {
+  @apply font-sans antialiased m-0 h-full;
+  /* If you want to maintain the dark background globally via CSS (outside of Tailwind utility classes on specific components), 
+     you can set it here. However, for more component-specific control, use Tailwind classes like bg-gray-800 on your main app container. 
+     For now, let's keep it to ensure the dark theme persists if not set elsewhere. */
+  background-color: #242424;
+  color: rgba(255, 255, 255, 0.87);
+  /* Default text color for dark theme */
+}
+
+#root {
+  @apply h-full;
+}
+
+/* 
+  Consider removing other global styles below if they are not strictly necessary 
+  or if they can be replaced by Tailwind utility classes on specific elements. 
+  For example, default 'a' tag styling, h1, etc., can often be handled 
+  on a case-by-case basis with Tailwind. 
+*/

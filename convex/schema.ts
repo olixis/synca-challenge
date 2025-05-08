@@ -3,12 +3,9 @@ import { v } from "convex/values";
 
 export default defineSchema({
     users: defineTable({
-        subject: v.string(),
-        email: v.string(),
-        userName: v.optional(v.string()),
+        ipAddress: v.string(),
     })
-        .index("by_subject", ["subject"])
-        .index("by_email", ["email"]),
+        .index("by_ipAddress", ["ipAddress"]),
     pokemon: defineTable({
         baseExp: v.int64(),
         height: v.float64(),

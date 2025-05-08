@@ -5,29 +5,40 @@ export const voteForPokemon = mutation({
     args: {
         pollId: v.id("polls"),
         pokemonId: v.id("pokemon"),
+        ipAddress: v.string(),
     },
     handler: async (ctx, args) => {
-        // const identity = await ctx.auth.getUserIdentity();
-        // if (!identity) {
-        //     throw new Error("User not authenticated");
-        // }
-        // const userId = identity.subject; 
-        const userId = "jh7db966k4njdqb0zmsxyxpdp97ff4bn"; // Mocked userId
+        // Find or create user by IP address
+        let user = await ctx.db
+            .query("users")
+            .withIndex("by_ipAddress", (q) => q.eq("ipAddress", args.ipAddress))
+            .unique();
 
-        // Check if user has already voted in this poll
-        const existingVotes = await ctx.db.query("votes")
+        let userIdToUse;
+
+        if (!user) {
+            // User does not exist, create them
+            const newUserId = await ctx.db.insert("users", { ipAddress: args.ipAddress });
+            userIdToUse = newUserId;
+        } else {
+            userIdToUse = user._id;
+        }
+
+        // Check if this user (identified by IP) has already voted in this poll
+        const existingVotes = await ctx.db
+            .query("votes")
             .withIndex("for_poll", (q) => q.eq("pollId", args.pollId))
-            .filter((q) => q.eq(q.field("userId"), userId as any))
+            .filter((q) => q.eq(q.field("userId"), userIdToUse))
             .collect();
 
         if (existingVotes.length > 0) {
-            throw new Error("User has already voted in this poll");
+            throw new Error("This IP address has already voted in this poll");
         }
 
         await ctx.db.insert("votes", {
             pollId: args.pollId,
             pokemonId: args.pokemonId,
-            userId: userId as any,
+            userId: userIdToUse,
         });
     },
 });

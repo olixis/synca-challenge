@@ -23,10 +23,24 @@ export const getAllVotesForPokemonInPoll = query({
 export const canUserVoteInPoll = query({
     args: {
         pollId: v.id("polls"),
-        userId: v.id("users"),
+        ipAddress: v.string(),
     },
     handler: async (ctx, args) => {
-        const votes = await ctx.db.query("votes").withIndex("for_poll", (q) => q.eq("pollId", args.pollId)).filter((q) => q.eq(q.field("userId"), args.userId)).collect();
+        const user = await ctx.db
+            .query("users")
+            .withIndex("by_ipAddress", (q) => q.eq("ipAddress", args.ipAddress))
+            .unique();
+
+        if (!user) {
+            return true;
+        }
+
+        const votes = await ctx.db
+            .query("votes")
+            .withIndex("for_poll", (q) => q.eq("pollId", args.pollId))
+            .filter((q) => q.eq(q.field("userId"), user._id))
+            .collect();
+
         return votes.length === 0;
     },
 })

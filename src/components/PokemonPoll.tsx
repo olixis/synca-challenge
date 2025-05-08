@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from 'convex/react';
+import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import toast, { Toaster } from 'react-hot-toast';
@@ -9,8 +9,7 @@ import toast, { Toaster } from 'react-hot-toast';
 const PokemonPoll = () => {
     // const { isAuthenticated, isLoading: authLoading } = useConvexAuth(); // MOCKED
     const isAuthenticated = true; // MOCKED
-    const authLoading = false; // MOCKED
-    // const { user } = useUser(); // Uncomment and use if you need user details from Clerk
+    const userIP = useAction(api.actions.getUserIP);
 
     const activePoll = useQuery(api.queries.getActivePoll);
     const voteForPokemon = useMutation(api.mutations.voteForPokemon);
@@ -44,8 +43,15 @@ const PokemonPoll = () => {
 
     const handleVote = async (pokemonId: Id<"pokemon">) => {
         if (!activePoll || !isAuthenticated) return;
+
+        const userIPAddress = await userIP();
+        if (!userIPAddress) {
+            toast.error("Could not determine IP address.");
+            return;
+        }
+
         try {
-            await voteForPokemon({ pollId: activePoll._id, pokemonId });
+            await voteForPokemon({ pollId: activePoll._id, pokemonId, ipAddress: userIPAddress });
             toast.success('Vote cast!');
             // Note: votesA and votesB queries will automatically refetch due to Convex reactivity.
         } catch (error) {
@@ -67,10 +73,6 @@ const PokemonPoll = () => {
     };
 
     const messageClasses = "p-4 sm:p-5 text-center text-lg text-gray-300 pt-12 md:pt-16";
-
-    if (authLoading) {
-        return <div className={messageClasses}>Loading authentication...</div>;
-    }
 
     if (!activePoll) {
         return <div className={messageClasses}>No active poll at the moment. Check back later!</div>;

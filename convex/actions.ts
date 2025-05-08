@@ -34,6 +34,12 @@ export const createPollAction = action({
             throw new Error("Please provide two different Pokémon names.");
         }
 
+        // Check for existing unfinished polls
+        const unfinishedPolls = await ctx.runQuery(api.queries.getUnfinishedPolls);
+        if (unfinishedPolls && unfinishedPolls.length > 0) {
+            throw new Error("A poll was likely created while you were making yours. Please check the existing polls.");
+        }
+
         // Fetch Pokémon A
         const responseA = await fetch(`https://pokeapi.co/api/v2/pokemon/${args.pokemonAName.toLowerCase()}`);
         if (!responseA.ok) {

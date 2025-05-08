@@ -52,3 +52,13 @@ export const getPokemonById = query({
     },
 });
 
+export const getUnfinishedPolls = query({
+    handler: async (ctx) => {
+        const unfinishedPolls = await ctx.db
+            .query("polls")
+            .filter((q) => q.eq(q.field("finished"), false))
+            .collect();
+        return unfinishedPolls;
+    },
+});
+

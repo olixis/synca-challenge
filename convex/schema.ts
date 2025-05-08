@@ -7,7 +7,7 @@ export default defineSchema({
     })
         .index("by_ipAddress", ["ipAddress"]),
     pokemon: defineTable({
-        baseExp: v.int64(),
+        baseExp: v.float64(),
         height: v.float64(),
         name: v.string(),
         spriteImgUrl: v.string(),

@@ -32,7 +32,7 @@ export const voteForPokemon = mutation({
             .collect();
 
         if (existingVotes.length > 0) {
-            throw new Error("This IP address has already voted in this poll");
+            throw new Error("This user has already voted in this poll");
         }
 
         await ctx.db.insert("votes", {
@@ -58,3 +58,59 @@ export const endPoll = mutation({
 
 // We might also need a mutation to create a poll, but that's outside the current scope.
 // For now, we assume polls are created through other means (e.g., a script or directly in the dashboard). 
+
+export const getOrCreatePokemon = mutation({
+    args: {
+        name: v.string(),
+        baseExp: v.float64(),
+        height: v.float64(),
+        spriteImgUrl: v.string(),
+        weight: v.float64(),
+    },
+    handler: async (ctx, args) => {
+        const existingPokemon = await ctx.db
+            .query("pokemon")
+            .filter((q) => q.eq(q.field("name"), args.name))
+            .unique();
+
+        if (existingPokemon) {
+            // Potential improvement: Update existing pokemon data if it changed in PokeAPI?
+            // For now, if it exists, we just return its ID.
+            return existingPokemon._id;
+        }
+
+        const pokemonId = await ctx.db.insert("pokemon", {
+            name: args.name,
+            baseExp: args.baseExp,
+            height: args.height,
+            spriteImgUrl: args.spriteImgUrl,
+            weight: args.weight,
+        });
+        return pokemonId;
+    },
+});
+
+export const createPoll = mutation({
+    args: {
+        pokemonAId: v.id("pokemon"),
+        pokemonBId: v.id("pokemon"),
+    },
+    handler: async (ctx, args) => {
+        // Add any authorization logic here if needed, e.g., check if user is admin
+        // const identity = await ctx.auth.getUserIdentity();
+        // if (!identity || identity.subject !== "mocked_admin_user_id") { // Example admin check
+        //     throw new Error("User not authorized to create polls.");
+        // }
+
+        if (args.pokemonAId === args.pokemonBId) {
+            throw new Error("Cannot create a poll with the same Pokémon twice.");
+        }
+
+        const newPollId = await ctx.db.insert("polls", {
+            pokemonAId: args.pokemonAId,
+            pokemonBId: args.pokemonBId,
+            finished: false,
+        });
+        return newPollId;
+    },
+}); 

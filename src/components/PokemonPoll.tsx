@@ -2,9 +2,8 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import toast, { Toaster } from 'react-hot-toast';
+import React, { useState } from 'react';
 // import { useConvexAuth } from 'convex/react'; // To check auth state - MOCKED
-// Assuming useUser from Clerk for user identity, adjust if using a different provider
-// import { useUser } from "@clerk/clerk-react"; 
 
 const PokemonPoll = () => {
     // const { isAuthenticated, isLoading: authLoading } = useConvexAuth(); // MOCKED
@@ -14,6 +13,12 @@ const PokemonPoll = () => {
     const activePoll = useQuery(api.queries.getActivePoll);
     const voteForPokemon = useMutation(api.mutations.voteForPokemon);
     const endPollMutation = useMutation(api.mutations.endPoll);
+    const createPoll = useAction(api.actions.createPollAction);
+
+    // State for creating a new poll
+    const [pokemonAName, setPokemonAName] = useState("");
+    const [pokemonBName, setPokemonBName] = useState("");
+    const [isCreatingPoll, setIsCreatingPoll] = useState(false);
 
     // Fetch Pokémon details
     const pokemonA = useQuery(api.queries.getPokemonById, activePoll ? { pokemonId: activePoll.pokemonAId } : 'skip');
@@ -55,8 +60,8 @@ const PokemonPoll = () => {
             toast.success('Vote cast!');
             // Note: votesA and votesB queries will automatically refetch due to Convex reactivity.
         } catch (error) {
-            console.error("Failed to cast vote:", error);
-            toast.error(`Error voting: ${error instanceof Error ? error.message : String(error)}`);
+            console.error(`Failed to cast vote: ${(error as Error).message}`);
+            toast.error(`Error voting: ${(error as Error).message.split("Uncaught Error: ")[1].split(" at ")[0]}`);
         }
     };
 
@@ -68,14 +73,94 @@ const PokemonPoll = () => {
             // UI should ideally react to activePoll becoming null or finished
         } catch (error) {
             console.error("Failed to end poll:", error);
-            toast.error(`Error ending poll: ${error instanceof Error ? error.message : String(error)}`);
+            toast.error(`Error ending poll. More details at the console.`);
         }
+    };
+
+    const handleCreatePoll = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!pokemonAName.trim() || !pokemonBName.trim()) {
+            toast.error("Please enter names for both Pokémon.");
+            return;
+        }
+        if (pokemonAName.trim().toLowerCase() === pokemonBName.trim().toLowerCase()) {
+            toast.error("Please enter two different Pokémon names.");
+            return;
+        }
+
+        setIsCreatingPoll(true);
+        try {
+            await createPoll({ pokemonAName: pokemonAName.trim(), pokemonBName: pokemonBName.trim() });
+            toast.success('New poll created successfully!');
+            setPokemonAName("");
+            setPokemonBName("");
+            // activePoll query will update automatically and show the new poll
+        } catch (error) {
+            console.error("Failed to create poll:", error);
+            const errorMessage = (error instanceof Error) ? error.message : "An unknown error occurred.";
+            const userFriendlyMessage = errorMessage.includes("Uncaught Error: ")
+                ? errorMessage.split("Uncaught Error: ")[1].split(" at ")[0]
+                : errorMessage;
+            toast.error(`Error creating poll: ${userFriendlyMessage}`);
+        }
+        setIsCreatingPoll(false);
     };
 
     const messageClasses = "p-4 sm:p-5 text-center text-lg text-gray-300 pt-12 md:pt-16";
 
-    if (!activePoll) {
-        return <div className={messageClasses}>No active poll at the moment. Check back later!</div>;
+    if (isCreatingPoll) {
+        return <div className={messageClasses}>Creating your poll... Hang tight!</div>;
+    }
+
+    // If activePoll is undefined, the query is still loading.
+    if (activePoll === undefined) {
+        return <div className={messageClasses}>Loading poll status...</div>;
+    }
+
+    // If activePoll is null, no active poll exists. Show create poll form.
+    if (activePoll === null) {
+        // return <div className={messageClasses}>No active poll at the moment. Check back later!</div>;
+        return (
+            <div className="flex flex-col items-center font-sans p-4 sm:p-5 bg-transparent pt-12 md:pt-16">
+                <Toaster position="top-center" reverseOrder={false} />
+                <h1 className="mb-4 sm:mb-6 text-white font-bold text-2xl sm:text-3xl md:text-4xl text-center shrink-0">Start a New Pokémon Battle!</h1>
+                <form onSubmit={handleCreatePoll} className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-xl">
+                    <div className="mb-4">
+                        <label htmlFor="pokemonAName" className="block text-gray-300 text-sm font-bold mb-2">Pokémon 1 Name:</label>
+                        <input
+                            type="text"
+                            id="pokemonAName"
+                            value={pokemonAName}
+                            onChange={(e) => setPokemonAName(e.target.value)}
+                            placeholder="e.g., Pikachu"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-200 placeholder-gray-500"
+                            disabled={isCreatingPoll}
+                        />
+                    </div>
+                    <div className="mb-6">
+                        <label htmlFor="pokemonBName" className="block text-gray-300 text-sm font-bold mb-2">Pokémon 2 Name:</label>
+                        <input
+                            type="text"
+                            id="pokemonBName"
+                            value={pokemonBName}
+                            onChange={(e) => setPokemonBName(e.target.value)}
+                            placeholder="e.g., Charizard"
+                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-200 placeholder-gray-500"
+                            disabled={isCreatingPoll}
+                        />
+                    </div>
+                    <div className="flex items-center justify-center">
+                        <button
+                            type="submit"
+                            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline disabled:bg-gray-400"
+                            disabled={isCreatingPoll}
+                        >
+                            {isCreatingPoll ? 'Starting...' : 'Start Battle!'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        );
     }
 
     if (!pokemonA || !pokemonB) {

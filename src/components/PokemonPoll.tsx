@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import toast from 'react-hot-toast';
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import CreatePollForm from './CreatePollForm';
 import ActivePollDisplay from './ActivePollDisplay';
-import type { Id, PokemonData } from '../types'; // Added import for shared types
+import type { PokemonData } from '../types'; // Added import for shared types
 // import { useConvexAuth } from 'convex/react'; // To check auth state - MOCKED
 
 const PokemonPoll = () => {

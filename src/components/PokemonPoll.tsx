@@ -2,13 +2,13 @@ import { useQuery, useMutation, useAction } from 'convex/react';
 import { api } from '../../convex/_generated/api';
 import type { Id } from '../../convex/_generated/dataModel';
 import toast, { Toaster } from 'react-hot-toast';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 // import { useConvexAuth } from 'convex/react'; // To check auth state - MOCKED
 
 const PokemonPoll = () => {
     // const { isAuthenticated, isLoading: authLoading } = useConvexAuth(); // MOCKED
     const isAuthenticated = true; // MOCKED
-    const userIP = useAction(api.actions.getUserIP);
+    const [clientIP, setClientIP] = useState<string | null>(null); // Added state for IP
 
     const activePoll = useQuery(api.queries.getActivePoll);
     const voteForPokemon = useMutation(api.mutations.voteForPokemon);
@@ -19,6 +19,21 @@ const PokemonPoll = () => {
     const [pokemonAName, setPokemonAName] = useState("");
     const [pokemonBName, setPokemonBName] = useState("");
     const [isCreatingPoll, setIsCreatingPoll] = useState(false);
+
+    // Effect to fetch client IP
+    useEffect(() => {
+        const fetchIP = async () => {
+            try {
+                const response = await fetch("https://api.ipify.org?format=json");
+                const data = await response.json();
+                setClientIP(data.ip);
+            } catch (error) {
+                console.error("Error fetching IP:", error);
+                toast.error("Could not identify user, please refresh the page and try again.");
+            }
+        };
+        fetchIP();
+    }, []); // Empty dependency array means this runs once on mount
 
     // Fetch Pokémon details
     const pokemonA = useQuery(api.queries.getPokemonById, activePoll ? { pokemonId: activePoll.pokemonAId } : 'skip');
@@ -36,27 +51,17 @@ const PokemonPoll = () => {
     const votesACount = votesA?.length ?? "loading...";
     const votesBCount = votesB?.length ?? "loading...";
 
-    // Check if the current user can vote
-    // Note: Convex identity.subject is used as userId in the mutation. 
-    // If your users table links Clerk userId differently, canUserVoteInPoll might need adjustment or a different approach.
-    // For simplicity, we'll rely on the mutation to throw an error if already voted.
-    // Alternatively, you could pass `user?.id` if that's your stored `userId`.
-    // const canVote = useQuery(api.queries.canUserVoteInPoll, 
-    //     (activePoll && user?.id) ? { pollId: activePoll._id, userId: user.id as Id<"users"> } : 'skip' 
-    // );
-    // For now, we'll allow attempting a vote and let the mutation handle logic.
 
     const handleVote = async (pokemonId: Id<"pokemon">) => {
         if (!activePoll || !isAuthenticated) return;
 
-        const userIPAddress = await userIP();
-        if (!userIPAddress) {
-            toast.error("Could not determine IP address.");
+        if (!clientIP) {
+            toast.error("Could not determine IP address. Please wait or refresh.");
             return;
         }
 
         try {
-            await voteForPokemon({ pollId: activePoll._id, pokemonId, ipAddress: userIPAddress });
+            await voteForPokemon({ pollId: activePoll._id, pokemonId, ipAddress: clientIP });
             toast.success('Vote cast!');
             // Note: votesA and votesB queries will automatically refetch due to Convex reactivity.
         } catch (error) {

@@ -13,16 +13,6 @@ export const getPokemon = action({
     },
 });
 
-export const getUserIP = action({
-    args: {},
-    handler: async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
-        const response = await fetch("https://api.ipify.org?format=json");
-        const data = await response.json();
-        return data.ip;
-    },
-});
-
 export const createPollAction = action({
     args: { pokemonAName: v.string(), pokemonBName: v.string() },
     handler: async (ctx, args): Promise<{ pollId: Id<"polls"> }> => {

@@ -16,7 +16,7 @@ This project leverages a modern web development stack:
 
 *   **Frontend Framework:** React
 *   **State Management & Data Fetching:** TanStack Query (React Query) for managing server state, caching, and simplifying data fetching logic.
-*   **Real-time Backend & Database:** Convex, providing a serverless backend platform with real-time database capabilities and WebSocket communication out-of-the-box. This enables live vote syncing without managing a separate WebSocket server.
+*   **Real-time Backend & Database:** [Convex](https://www.convex.dev/) , providing a serverless backend platform with real-time database capabilities and WebSocket communication out-of-the-box. This enables live vote syncing without managing a separate WebSocket server.
 *   **Styling:** Tailwind CSS for utility-first styling, enabling rapid UI development.
 *   **Animations:** Framer Motion for smooth UI transitions and animations.
 *   **Notifications:** React Hot Toast for user-friendly in-app notifications.

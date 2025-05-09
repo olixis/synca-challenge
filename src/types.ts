@@ -27,4 +27,31 @@ export type VoteForPokemonMutationFn = (params: {
 
 export type EndPollMutationFn = (params: {
     pollId: Id<"polls">; // Assuming 'polls' is the table name for polls in your schema
-}) => Promise<any>; 
+}) => Promise<any>;
+
+export interface PokemonCardProps {
+    pokemon: PokemonData;
+    votesCount: number | string;
+    onVote: () => void;
+    isAuthenticated: boolean;
+    isWinning: boolean;
+    buttonColorClass?: string;
+}
+
+export interface CreatePollFormProps {
+    createPollAction: CreatePollActionFn;
+}
+
+export interface ActivePollDisplayProps {
+    pokemonA: PokemonData;
+    pokemonB: PokemonData;
+    votesACount: number | string;
+    votesBCount: number | string;
+    isAuthenticated: boolean;
+    showWinningA: boolean;
+    showWinningB: boolean;
+    activePollId: Id<"polls">;
+    clientIP: string | null;
+    voteForPokemonMutation: VoteForPokemonMutationFn;
+    endPollMutation: EndPollMutationFn;
+} 

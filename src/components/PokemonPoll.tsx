@@ -11,7 +11,7 @@ import type { PokemonData } from '../types'; // Added import for shared types
 const PokemonPoll = () => {
     // const { isAuthenticated, isLoading: authLoading } = useConvexAuth(); // MOCKED
     const isAuthenticated = true; // MOCKED
-    const [clientIP, setClientIP] = useState<string | null>(null); // Stays here
+    const [clientIP, setClientIP] = useState<string | null>(null);
 
     const activePoll = useQuery(api.queries.getActivePoll);
     const voteForPokemon = useMutation(api.mutations.voteForPokemon);

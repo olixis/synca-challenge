@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { handleCreatePollUtil } from '../utils/pollUtils';
-import type { CreatePollActionFn } from '../types';
-
-interface CreatePollFormProps {
-    createPollAction: CreatePollActionFn;
-}
+import type { CreatePollFormProps } from '../types';
 
 const CreatePollForm: React.FC<CreatePollFormProps> = ({
     createPollAction

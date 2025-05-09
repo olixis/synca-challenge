@@ -1,15 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import type { PokemonData } from '../types'; // Updated import
-
-interface PokemonCardProps {
-    pokemon: PokemonData; // Use PokemonData from shared types
-    votesCount: number | string;
-    onVote: () => void;
-    isAuthenticated: boolean;
-    isWinning: boolean;
-    buttonColorClass?: string; // e.g., 'bg-green-500 hover:bg-green-600'
-}
+import type { PokemonCardProps } from '../types';
 
 const PokemonCard: React.FC<PokemonCardProps> = ({
     pokemon,
@@ -17,7 +8,7 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
     onVote,
     isAuthenticated,
     isWinning,
-    buttonColorClass = 'bg-gray-500 hover:bg-gray-600' // Default button color
+    buttonColorClass = 'bg-gray-500 hover:bg-gray-600'
 }) => {
     return (
         <div className="flex flex-col items-center">

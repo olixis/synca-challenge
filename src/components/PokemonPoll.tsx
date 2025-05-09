@@ -1,11 +1,19 @@
-import { useQuery, useMutation, useAction } from 'convex/react';
-import { api } from '../../convex/_generated/api';
 import toast from 'react-hot-toast';
 import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import CreatePollForm from './CreatePollForm';
 import ActivePollDisplay from './ActivePollDisplay';
-import type { PokemonData } from '../types'; // Added import for shared types
+import type { PokemonData } from '../types';
+import {
+    useVoteForPokemonMutation,
+    useEndPollMutation,
+    useCreatePollMutation
+} from '../hooks/usePokemonMutations';
+import {
+    useActivePollQuery,
+    usePokemonByIdQuery,
+    useVotesForPokemonInPollQuery
+} from '../hooks/usePokemonQueries';
 // import { useConvexAuth } from 'convex/react'; // To check auth state - MOCKED
 
 const PokemonPoll = () => {
@@ -13,12 +21,7 @@ const PokemonPoll = () => {
     const isAuthenticated = true; // MOCKED
     const [clientIP, setClientIP] = useState<string | null>(null);
 
-    const activePoll = useQuery(api.queries.getActivePoll);
-    const voteForPokemon = useMutation(api.mutations.voteForPokemon);
-    const endPollMutation = useMutation(api.mutations.endPoll);
-    const createPoll = useAction(api.actions.createPollAction);
-
-    // Effect to fetch client IP
+    // Effect to fetch client IP (runs once on mount)
     useEffect(() => {
         const fetchIP = async () => {
             try {
@@ -31,60 +34,91 @@ const PokemonPoll = () => {
             }
         };
         fetchIP();
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-    // Fetch Pokémon details
-    const pokemonA = useQuery(api.queries.getPokemonById, activePoll ? { pokemonId: activePoll.pokemonAId } : 'skip');
-    const pokemonB = useQuery(api.queries.getPokemonById, activePoll ? { pokemonId: activePoll.pokemonBId } : 'skip');
+    // Individual Mutation Hooks
+    const { mutateAsync: voteForPokemonAsync } = useVoteForPokemonMutation();
+    const { mutateAsync: endPollMutationAsync } = useEndPollMutation();
+    const { mutateAsync: createPollAsync } = useCreatePollMutation();
 
-    const votesA = useQuery(
-        api.queries.getAllVotesForPokemonInPoll,
-        activePoll && pokemonA ? { pollId: activePoll._id, pokemonId: pokemonA._id } : 'skip'
-    );
-    const votesB = useQuery(
-        api.queries.getAllVotesForPokemonInPoll,
-        activePoll && pokemonB ? { pollId: activePoll._id, pokemonId: pokemonB._id } : 'skip'
-    );
+    // Active Poll Query
+    const { data: activePollData, isPending: activePollIsPending } = useActivePollQuery();
 
-    const votesACount = votesA?.length ?? "loading...";
-    const votesBCount = votesB?.length ?? "loading...";
+    // Pokemon A Query (dependent on activePollData)
+    const { data: pokemonAData, isPending: pokemonAIsPending } = usePokemonByIdQuery({
+        pokemonId: activePollData?.pokemonAId,
+        enabled: !!activePollData,
+    });
+
+    // Pokemon B Query (dependent on activePollData)
+    const { data: pokemonBData, isPending: pokemonBIsPending } = usePokemonByIdQuery({
+        pokemonId: activePollData?.pokemonBId,
+        enabled: !!activePollData,
+    });
+
+    // Votes A Query (dependent on activePollData and pokemonAData)
+    const { data: votesAData, isPending: votesAIsPending } = useVotesForPokemonInPollQuery({
+        pollId: activePollData?._id,
+        pokemonId: pokemonAData?._id,
+        enabled: !!(activePollData && pokemonAData),
+    });
+
+    // Votes B Query (dependent on activePollData and pokemonBData)
+    const { data: votesBData, isPending: votesBIsPending } = useVotesForPokemonInPollQuery({
+        pollId: activePollData?._id,
+        pokemonId: pokemonBData?._id,
+        enabled: !!(activePollData && pokemonBData),
+    });
 
     const messageClasses = "p-4 sm:p-5 text-center text-lg text-gray-300 pt-12 md:pt-16";
 
-    if (activePoll === undefined) {
+    if (activePollIsPending) {
         return <div className={messageClasses}>Loading poll status...</div>;
     }
 
-    if (activePoll === null) {
+    if (activePollData === null) {
         return (
             <AnimatePresence mode="wait">
                 <CreatePollForm
-                    createPollAction={createPoll}
+                    createPollAction={createPollAsync}
                 />
             </AnimatePresence>
         );
     }
 
-    // At this point, activePoll is an object (not undefined, not null)
-    // pokemonA and pokemonB queries depend on activePoll, so they are either loading or loaded.
+    const activePoll = activePollData;
 
-    if (!pokemonA || !pokemonB) {
+    if (pokemonAIsPending || pokemonBIsPending) {
         return <div className={messageClasses}>Loading Pokémon details...</div>;
     }
 
-    // At this point, activePoll, pokemonA, and pokemonB are all loaded.
-    const typedPokemonA = pokemonA as PokemonData; // Assert as PokemonData, not | undefined | null
-    const typedPokemonB = pokemonB as PokemonData; // Assert as PokemonData, not | undefined | null
+    if (!pokemonAData || !pokemonBData) {
+        return <div className={messageClasses}>Pokémon details not found. You might need to create a new poll.</div>;
+    }
+
+    const pokemonA = pokemonAData;
+    const pokemonB = pokemonBData;
+
+    if (votesAIsPending || votesBIsPending) {
+        return <div className={messageClasses}>Loading vote counts...</div>;
+    }
+
+    const votesACount = votesAData?.length ?? 0;
+    const votesBCount = votesBData?.length ?? 0;
+
+    const typedPokemonA = pokemonA as PokemonData;
+    const typedPokemonB = pokemonB as PokemonData;
 
     const isNumeric = (val: any): val is number => typeof val === 'number';
     const showWinningA = isNumeric(votesACount) && isNumeric(votesBCount) && votesACount > votesBCount;
     const showWinningB = isNumeric(votesACount) && isNumeric(votesBCount) && votesBCount > votesACount;
 
+    if (!activePoll) {
+        return <div className={messageClasses}>Poll data has become unavailable. Please refresh.</div>;
+    }
+
     return (
         <AnimatePresence mode="wait">
-            {/* Since all loading states and null activePoll are handled by early returns,
-                we can directly render ActivePollDisplay here. 
-                activePoll is guaranteed to be an object, and pokemonA/B are loaded. */}
             <ActivePollDisplay
                 pokemonA={typedPokemonA}
                 pokemonB={typedPokemonB}
@@ -93,10 +127,10 @@ const PokemonPoll = () => {
                 isAuthenticated={isAuthenticated}
                 showWinningA={showWinningA}
                 showWinningB={showWinningB}
-                activePollId={activePoll._id} // Safe: activePoll is an object here
+                activePollId={activePoll._id}
                 clientIP={clientIP}
-                voteForPokemonMutation={voteForPokemon}
-                endPollMutation={endPollMutation}
+                voteForPokemonMutation={voteForPokemonAsync}
+                endPollMutation={endPollMutationAsync}
             />
         </AnimatePresence>
     );

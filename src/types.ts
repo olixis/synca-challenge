@@ -54,4 +54,16 @@ export interface ActivePollDisplayProps {
     clientIP: string | null;
     voteForPokemonMutation: VoteForPokemonMutationFn;
     endPollMutation: EndPollMutationFn;
+}
+
+// Argument types for custom query hooks
+export interface UsePokemonByIdQueryArgs {
+    pokemonId: Id<"pokemon"> | undefined;
+    enabled?: boolean;
+}
+
+export interface UseVotesForPokemonInPollQueryArgs {
+    pollId: Id<"polls"> | undefined;
+    pokemonId: Id<"pokemon"> | undefined;
+    enabled?: boolean;
 } 

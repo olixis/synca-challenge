@@ -10,13 +10,35 @@ const PokemonCard: React.FC<PokemonCardProps> = ({
     isWinning,
     buttonColorClass = 'bg-gray-500 hover:bg-gray-600'
 }) => {
+    const imageVariants = {
+        winning: {
+            y: [0, -10, 0],
+            rotate: [0, -5, 5, -5, 0],
+            transition: {
+                duration: 0.8,
+                repeat: Infinity,
+                ease: "easeInOut"
+            }
+        },
+        notWinning: {
+            y: 0,
+            rotate: 0
+        }
+    };
+
     return (
         <div className="flex flex-col items-center">
             <div className={`text-2xl font-bold text-yellow-400 mb-2 animate-pulse ${isWinning ? 'visible' : 'invisible'}`}>
                 Winning!
             </div>
             <div className="text-center p-3 sm:p-4 border border-gray-700 rounded-xl w-full bg-white shadow-lg">
-                <img src={pokemon.spriteImgUrl} alt={pokemon.name} className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mx-auto mb-2" />
+                <motion.img
+                    src={pokemon.spriteImgUrl}
+                    alt={pokemon.name}
+                    className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 mx-auto mb-2"
+                    variants={imageVariants}
+                    animate={isWinning ? "winning" : "notWinning"}
+                />
                 <h2 className="my-1 text-gray-800 font-bold text-lg sm:text-xl md:text-xl">{pokemon.name.toUpperCase()}</h2>
                 <p className="text-xs sm:text-sm text-gray-700">Weight: {pokemon.weight} | Height: {pokemon.height}</p>
                 <p className="text-xs sm:text-sm text-gray-700 mb-1 sm:mb-2">Base Exp: {pokemon.baseExp}</p>
